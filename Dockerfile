@@ -1,20 +1,17 @@
-# Use an official Node.js runtime as the base image
+# Use the official Node.js image as a base image
 FROM node:14
 
-# Set the working directory in the container to /app
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy the package.json and package-lock.json (if available) to the container
-COPY package*.json ./
+# Copy package.json and package-lock.json to the working directory
+COPY package.json package-lock.json ./
 
-# Install the application's dependencies inside the container
-RUN npm install --production
+# Install all dependencies, including devDependencies
+RUN npm install
 
-# Copy the rest of the application's files to the container
+# Copy the entire project to the working directory
 COPY . .
-
-# Install rimraf and Babel CLI tools globally
-RUN npm install -g rimraf @babel/cli @babel/node
 
 # Build the application
 RUN npm run build
