@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rimraf dist && babel src --out-dir dist  --copy-files",
+    "build": "./node_modules/.bin/rimraf dist && ./node_modules/.bin/babel src --out-dir dist --copy-files",
     "start": "node dist/app.js",
-    "dev": "nodemon --exec babel-node src/app.js"
+    "dev": "./node_modules/.bin/nodemon --exec ./node_modules/.bin/babel-node src/app.js"
   },
   "keywords": [],
   "author": "",
