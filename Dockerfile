@@ -13,8 +13,8 @@ RUN npm install --production
 # Copy the rest of the application's files to the container
 COPY . .
 
-# Install rimraf globally
-RUN npm install -g rimraf
+# Install rimraf and Babel CLI tools globally
+RUN npm install -g rimraf @babel/cli @babel/node
 
 # Build the application
 RUN npm run build
