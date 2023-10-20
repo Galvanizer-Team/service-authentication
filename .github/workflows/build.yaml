@@ -1,0 +1,39 @@
+name: Build and Containerize Next.js App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Extract Repo Name
+        id: repo_name
+        run: echo "::set-output name=REPO_NAME::$(echo $GITHUB_REPOSITORY | cut -d '/' -f2)"
+
+      - name: Set git config for safe directory
+        run: git config --global --add safe.directory /github/workspace
+
+      - name: Bump version and push tag
+        id: bump_version
+        uses: anothrNick/github-tag-action@1.67.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          WITH_V: true
+          DEFAULT_BUMP: patch # Default bump type (major, minor, patch)
+
+      - name: Login to DOCR with Access Token
+        run: |
+          echo ${{ secrets.DOCR_TOKEN }} | docker login registry.digitalocean.com -u ${{ secrets.DOCR_TOKEN }} --password-stdin
+
+      - name: Build Docker Image with New Version
+        run: docker build -t registry.digitalocean.com/dc-containers-test/${{ steps.repo_name.outputs.REPO_NAME }}:${{ steps.bump_version.outputs.new_tag || 'latest' }} .
+
+      - name: Push Docker Image to DOCR
+        run: docker push registry.digitalocean.com/dc-containers-test/${{ steps.repo_name.outputs.REPO_NAME }}:${{ steps.bump_version.outputs.new_tag || 'latest' }}
