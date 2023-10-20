@@ -13,6 +13,9 @@ RUN npm install --production
 # Copy the rest of the application's files to the container
 COPY . .
 
+# Install rimraf globally
+RUN npm install -g rimraf
+
 # Build the application
 RUN npm run build
 
