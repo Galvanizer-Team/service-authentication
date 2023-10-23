@@ -14,6 +14,11 @@ app.use("/", baseRoutes)
 app.use("/user", userRoutes)
 app.use("/test", testRoutes)
 
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).json({ status: false, message: err.message })
+})
+
 app.listen(PORT, async () => {
   console.log(`App listening at port ${PORT}`)
   try {
