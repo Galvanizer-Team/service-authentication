@@ -37,3 +37,15 @@ jobs:
 
       - name: Push Docker Image to DOCR
         run: docker push registry.digitalocean.com/dc-containers-test/${{ steps.repo_name.outputs.REPO_NAME }}:${{ steps.bump_version.outputs.new_tag || 'latest' }}
+
+      - name: Send email
+        uses: dawidd6/action-send-mail@v2
+        with:
+          server_address: ${{secrets.EMAIL_SERVER_ADDRESS}}
+          server_port: 465
+          username: ${{secrets.EMAIL_USERNAME}}
+          password: ${{secrets.EMAIL_PASSWORD}}
+          subject: Build completed!
+          to: david@davidcrammer.com
+          from: ${{secrets.EMAIL_USERNAME}}
+          body: Build has been completed.
