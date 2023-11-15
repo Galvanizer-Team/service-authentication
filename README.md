@@ -45,6 +45,7 @@ Register a new user.
     "sendEmail": true, // optional, defaults to true
     "sendSms": true, // optional, defaults to false
     "setCookie": false // optional, will set a cookie with the JWT, defaults to false
+    "sendResetEmail": true // optional, will send a password reset email if password is not provided
   }
 }
 ```
@@ -55,7 +56,7 @@ Sets a cookie with the JWT if `options.setCookie` is true.
 
 ---
 
-### POST /auth/unpw
+### POST /login
 
 Authenticates a user via username/password and returns a JWT.
 
@@ -77,7 +78,19 @@ Sets a cookie with the JWT if `options.setCookie` is true.
 
 ---
 
-### GET /auth/{provider}
+### POST /password/forgot
+
+---
+
+### GET /password/reset/:token
+
+---
+
+### POST /password/reset/:token
+
+---
+
+### GET /oauth/:provider
 
 Authenticates a user via an OAuth provider
 
@@ -87,7 +100,7 @@ _None_
 
 ---
 
-### Get /auth/{provider}/callback
+### Get /oauth/:provider/callback
 
 Callback for OAuth provider
 
@@ -97,7 +110,23 @@ _This endpoint is not meant to be called directly_
 
 ---
 
-### GET /logout
+### POST /oauth/link
+
+---
+
+### POST /login/magic
+
+---
+
+### GET /login/magic/:token
+
+---
+
+### GET /token/refresh
+
+---
+
+### GET /token/revoke
 
 Logs out the user and clears the JWT cookie. Also revokes the refresh token.
 
@@ -108,3 +137,53 @@ _None_
 #### Response
 
 **200** Clears the JWT cookie.
+
+###
+
+---
+
+### POST /mfa/setup
+
+---
+
+### POST /mfa/verify
+
+---
+
+### POST /mfa/remove
+
+---
+
+### POST /otp/send
+
+---
+
+### POST /otp/verify
+
+---
+
+### POST /otp/remove
+
+---
+
+### POST /authenticator/setup
+
+---
+
+### POST /authenticator/verify
+
+---
+
+### GET /user
+
+---
+
+### GET /user/:user_id
+
+---
+
+### POST /user
+
+---
+
+### PUT /user/:user_id
