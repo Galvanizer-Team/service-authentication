@@ -53,6 +53,8 @@ Register a new user.
 
 Sets a cookie with the JWT if `options.setCookie` is true.
 
+---
+
 ### POST /auth/unpw
 
 Authenticates a user via username/password and returns a JWT.
@@ -73,6 +75,8 @@ Authenticates a user via username/password and returns a JWT.
 
 Sets a cookie with the JWT if `options.setCookie` is true.
 
+---
+
 ### GET /auth/{provider}
 
 Authenticates a user via an OAuth provider
@@ -81,6 +85,8 @@ Authenticates a user via an OAuth provider
 
 _None_
 
+---
+
 ### Get /auth/{provider}/callback
 
 Callback for OAuth provider
@@ -88,6 +94,8 @@ Callback for OAuth provider
 #### Request
 
 _This endpoint is not meant to be called directly_
+
+---
 
 ### GET /logout
 
