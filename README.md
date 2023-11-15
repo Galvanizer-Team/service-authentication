@@ -4,26 +4,50 @@ This is a service that provides authentication for the other services in the sys
 
 ### Features:
 
-- Registration
-- Login
-- Logout
-- Email verification
-- SMS verification
-- Magic links
-- Password Reset
-- Webhooks
-- JWTs
-  - Token Refresh
-- OAuth
-  - Configurable token providers
-  - Linking oAuth to user profile
-- MFA
-  - SMS-based, OTPs
-  - Authenticator apps
-- Rate limiting
-- CAPTCHA
-- Audit trail
-- Roles and caps
+- Registration, login, logout, email verification, SMS verification. magic links. password Reset, webhooks, JWTs, token refresh, OAuth (Configurable token providers, Linking oAuth to user profile), MFA (SMS-based, OTPs, Authenticator apps), rate limiting, CAPTCHA, audit trail, roles and caps
+
+### Contents:
+
+- [service-authentication](#service-authentication)
+  - [Features:](#features)
+  - [Contents:](#contents)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+    - [Usage](#usage)
+  - [Reference](#reference)
+  - [Endpoints](#endpoints)
+    - [POST /register](#post-register)
+    - [POST /login](#post-login)
+    - [POST /password/forgot](#post-passwordforgot)
+    - [GET /password/reset/:token](#get-passwordresettoken)
+    - [POST /password/reset/:token](#post-passwordresettoken)
+    - [GET /oauth/:provider](#get-oauthprovider)
+    - [Get /oauth/:provider/callback](#get-oauthprovidercallback)
+    - [POST /oauth/link](#post-oauthlink)
+    - [POST /login/magic](#post-loginmagic)
+    - [GET /login/magic/:token](#get-loginmagictoken)
+    - [GET /token/refresh](#get-tokenrefresh)
+    - [GET /token/revoke](#get-tokenrevoke)
+    - [POST /email/verify](#post-emailverify)
+    - [GET /email/verify/:token](#get-emailverifytoken)
+    - [POST /mfa/setup](#post-mfasetup)
+    - [POST /mfa/verify](#post-mfaverify)
+    - [POST /mfa/remove](#post-mfaremove)
+    - [POST /otp/send](#post-otpsend)
+    - [POST /otp/verify](#post-otpverify)
+    - [POST /otp/remove](#post-otpremove)
+    - [POST /authenticator/setup](#post-authenticatorsetup)
+    - [POST /authenticator/verify](#post-authenticatorverify)
+    - [GET /user](#get-user)
+    - [GET /user/:user_id](#get-useruser_id)
+    - [POST /user](#post-user)
+    - [PUT /user/:user_id](#put-useruser_id)
+    - [GET /webhooks](#get-webhooks)
+    - [POST /webhooks](#post-webhooks)
+    - [PUT /webhooks/:webhook_id](#put-webhookswebhook_id)
+    - [DELETE /webhooks/:webhook_id](#delete-webhookswebhook_id)
+    - [GET /audit/logs](#get-auditlogs)
 
 ---
 
@@ -46,6 +70,7 @@ Register a new user.
     "sendSms": true, // optional, defaults to false
     "setCookie": false // optional, will set a cookie with the JWT, defaults to false
     "sendResetEmail": true // optional, will send a password reset email if password is not provided
+    "verifyEmail": true // optional, will send a verification email if email is not verified
   }
 }
 ```
@@ -142,6 +167,14 @@ _None_
 
 ---
 
+### POST /email/verify
+
+---
+
+### GET /email/verify/:token
+
+---
+
 ### POST /mfa/setup
 
 ---
@@ -187,3 +220,23 @@ _None_
 ---
 
 ### PUT /user/:user_id
+
+---
+
+### GET /webhooks
+
+---
+
+### POST /webhooks
+
+---
+
+### PUT /webhooks/:webhook_id
+
+---
+
+### DELETE /webhooks/:webhook_id
+
+---
+
+### GET /audit/logs
