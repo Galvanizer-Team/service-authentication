@@ -35,7 +35,7 @@ Register a new user.
 
 ```json
 {
-  "email": "example@gmail.com", // required
-  "password": "password123" // optional, if not provided, a random password will be generated
+  "email": "example@gmail.com", # required
+  "password": "password123" # optional, if not provided, a random password will be generated
 }
 ```
