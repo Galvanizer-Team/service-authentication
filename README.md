@@ -37,7 +37,7 @@ Register a new user.
 
 #### Request
 
-```json
+```js
 {
   "email": "example@mail.com", // required
   "password": "password123", // optional, if not provided, a random password will be generated
@@ -61,7 +61,7 @@ Authenticates a user via username/password and returns a JWT.
 
 #### Request
 
-```json
+```js
 {
   "email": "example@mail.com", // required
   "password": "password123", // required
