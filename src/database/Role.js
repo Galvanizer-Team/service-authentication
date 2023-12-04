@@ -15,8 +15,22 @@ export const Role = sequelize.define("Role", {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  baseCapabilities: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
   capabilities: {
     type: DataTypes.JSON,
     allowNull: true,
+  },
+  inheritFrom: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: "Roles", // same table
+      key: "id", // primary key of Roles table
+    },
+    onUpdate: "CASCADE",
+    onDelete: "SET NULL",
   },
 })
