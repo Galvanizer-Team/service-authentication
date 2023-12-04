@@ -7,15 +7,23 @@ export const User = sequelize.define("User", {
     primaryKey: true,
     autoIncrement: true,
   },
-  username: {
+  email: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   password: {
     type: DataTypes.STRING,
   },
-  email: {
-    type: DataTypes.STRING,
+  role: {
+    type: DataTypes.INTEGER,
     allowNull: false,
+    references: {
+      model: "Roles",
+      key: "name",
+    },
+  },
+  active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
   },
 })

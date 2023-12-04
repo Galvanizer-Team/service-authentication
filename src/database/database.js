@@ -1,10 +1,8 @@
 import { Sequelize } from "sequelize"
+import config from "../../config/config"
 
-const db = process.env.DB_NAME
-const user = process.env.DB_USER
-const password = process.env.DB_PASS
-const host = process.env.DB_HOST
-const port = process.env.DB_PORT
+const nodeEnv = process.env.NODE_ENV || "development"
+const { username: user, password, database: db, host, port } = config[nodeEnv]
 
 const sequelize = new Sequelize(db, user, password, {
   host,
