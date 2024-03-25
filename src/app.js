@@ -23,6 +23,8 @@ import "./models/index"
 const PORT = process.env.PORT || 3000
 const app = Express()
 
+app.set("trust proxy", 1)
+
 app.use(json())
 app.use(cors())
 app.use(helmet())
