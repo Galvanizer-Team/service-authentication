@@ -4,7 +4,7 @@ import isJWT from "validator/lib/isJWT"
 import CodedError from "../config/CodedError"
 import JWT from "./jwtClass"
 import Role from "./rolesClass"
-import UserModel from "../../models/User"
+import UserModel from "../models/User"
 
 /**
  * Default data to create a new user

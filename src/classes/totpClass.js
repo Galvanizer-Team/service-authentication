@@ -3,7 +3,7 @@ import * as OTPAuth from "otpauth"
 import crypto from "crypto"
 import base32 from "hi-base32"
 import AuthFactor from "./authFactorClass"
-import User from "../../models/User"
+import User from "../models/User"
 import CodedError from "../config/CodedError"
 
 /**

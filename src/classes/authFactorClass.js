@@ -1,5 +1,5 @@
-import AuthFactorModel from "../../models/AuthFactor"
-import User from "../../models/User"
+import AuthFactorModel from "../models/AuthFactor"
+import User from "../models/User"
 import CodedError from "../config/CodedError"
 
 /**

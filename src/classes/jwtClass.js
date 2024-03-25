@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken"
 import CodedError from "../config/CodedError"
-import Token from "../../models/Token"
+import Token from "../models/Token"
 
 /**
  * The Standard payload for a JWT token

@@ -1,5 +1,5 @@
-import CapabilityModel from "../../models/Capability"
-import RoleModel from "../../models/Role"
+import CapabilityModel from "../models/Capability"
+import RoleModel from "../models/Role"
 import CodedError from "../config/CodedError"
 
 class Capability {

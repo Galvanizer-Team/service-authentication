@@ -3,7 +3,7 @@ import "dotenv/config"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 import helmet from "helmet"
-import sequelize from "../config/database"
+import sequelize from "./config/database"
 import requireSSL from "./middleware/requireSSL"
 
 // Routes
@@ -18,7 +18,7 @@ import totpRoutes from "./routes/totpRoutes"
 
 // DB Models
 
-import "../models/index"
+import "./models/index"
 
 const PORT = process.env.PORT || 3000
 const app = Express()
