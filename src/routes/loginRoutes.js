@@ -1,33 +1,51 @@
 import express from "express"
-import jwt from "jsonwebtoken"
-import bcrypt from "bcryptjs"
+import isEmail from "validator/lib/isEmail"
+import normalizeEmail from "validator/lib/normalizeEmail"
 import CodedError from "../config/CodedError"
-import { User } from "../database/User"
+import User from "../classes/usersClass"
+import { noAuthLimiter } from "../middleware/rateLimiters"
+import Response from "../classes/responseClass"
+import Cookies from "../classes/cookiesClass"
 
 const router = express.Router()
 
-router.post("/", async (req, res, next) => {
-  const { email, password } = req.body
+router.post("/", noAuthLimiter, async (req, res) => {
+  let { email, password } = req.body
+
+  const response = new Response(req, res)
 
   try {
-    if (!email) throw new CodedError("Email is required", 400, "LOG|01")
-    if (!password) throw new CodedError("Password is required", 400, "LOG|02")
+    if (!password) throw new CodedError("Invalid Password", 400, "LOG|02")
+    if (!email || !isEmail(email)) throw new CodedError("Invalid Email", 400, "LOG|01")
+    email = normalizeEmail(email, { gmail_remove_subaddress: false })
 
-    const user = await User.findOne({ where: { email } })
+    const userMethods = new User()
+    const user = await userMethods.getUser({ email })
     if (!user) throw new CodedError("User not found", 400, "LOG|03")
 
-    if (!user.dataValues.password) throw new CodedError("Invalid password", 400, "LOG|03")
-    const passwordMatch = await bcrypt.compare(password, user.dataValues.password)
-    if (!passwordMatch) throw new CodedError("Invalid password", 400, "LOG|04")
+    const userId = user.id
+    const isPasswordValid = await userMethods.checkPassword(userId, password)
+    if (!isPasswordValid) throw new CodedError("Password is incorrect", 400, "LOG|04")
 
-    const tokenBody = { id: user.dataValues.id, email: user.dataValues.email, role: user.dataValues.role }
-    const token = jwt.sign(tokenBody, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    })
+    let token
 
-    res.status(200).json({ success: true, data: { token, user: tokenBody } })
+    if (user?.dataValues?.mfa) {
+      token = await userMethods.createHalfSessionToken(userId)
+    } else {
+      const cookies = new Cookies(req, res)
+      token = await userMethods.createSessionToken(userId)
+      cookies.setSessionCookie(token)
+
+      const refreshToken = await userMethods.createRefreshToken(userId)
+      if (!refreshToken) throw new CodedError("Error creating refresh token", 500, "REG|06")
+      cookies.setRefreshToken(refreshToken)
+    }
+    const tokenBody = JSON.parse(atob(token.split(".")[1]))
+
+    response.setToken(token)
+    response.success({ message: "Login successful", data: tokenBody })
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 

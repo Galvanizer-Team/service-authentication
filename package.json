@@ -2,7 +2,7 @@
   "name": "service-authentication",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rimraf dist && babel src --out-dir dist  --copy-files",
@@ -20,13 +20,33 @@
     "@babel/plugin-proposal-object-rest-spread": "^7.20.7",
     "@babel/preset-env": "^7.23.2",
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-async-handler": "^1.2.0",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "hi-base32": "^0.5.1",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.6.2",
     "nodemon": "^3.0.1",
+    "otpauth": "^9.2.1",
     "rimraf": "^5.0.5",
-    "sequelize": "^6.33.0"
+    "sequelize": "^6.33.0",
+    "validator": "^13.11.0"
+  },
+  "devDependencies": {
+    "@babel/preset-typescript": "^7.23.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.11.16",
+    "@types/validator": "^13.11.8",
+    "eslint": "^8.56.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }

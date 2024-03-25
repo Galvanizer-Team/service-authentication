@@ -1,148 +1,113 @@
 import express from "express"
 import verifyUser from "../middleware/verifyUser"
-import { User } from "../database/User"
-import userCan from "../utils/userCan"
+import User from "../classes/usersClass"
+import Response from "../classes/responseClass"
 import CodedError from "../config/CodedError"
-import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
 
 const router = express.Router()
 
-router.get("/:userId", verifyUser("users_read"), async (req, res, next) => {
-  const { userId } = req.params
-  const { user } = req
+router.get("/:id", verifyUser("users_read"), async (req, res) => {
+  const response = new Response(req, res)
+  const { id } = req.params
 
   try {
-    if (userId !== user.id && !userCan(req, "users_read_all")) throw new CodedError("Unauthorized", 401, "USR|01")
+    const userMethods = new User()
+    const { user } = req
 
-    const returnUser = await User.findByPk(userId)
+    const userCanReadAllUsers = await userMethods.hasCapabilities(user.id, "users_read_all")
+    const users = await userMethods.getUser({ id })
 
-    //delete sensitive data
-    delete returnUser.dataValues.password
+    if (!userCanReadAllUsers) {
+      if (users?.dataValues?.id === user.id) return response.success(users)
+      throw new CodedError("You are not allowed to read this user", 403, "USERS|01")
+    }
 
-    return res.status(200).json({ success: true, data: returnUser })
+    response.success(users)
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 
-router.get("/", verifyUser("users_read"), async (req, res, next) => {
-  const { user } = req
+router.get("/", verifyUser("users_read"), async (req, res) => {
+  const response = new Response(req, res)
 
   try {
-    let users
-    const userCanReadAll = await userCan(req, "users_read_all")
-    if (userCanReadAll) {
-      users = await User.findAll()
-    } else {
-      users = await User.findAll({ where: { id: user.id } })
+    const userMethods = new User()
+    const { user } = req
+
+    const userCanReadAllUsers = await userMethods.hasCapabilities(user.id, "users_read_all")
+    if (!userCanReadAllUsers) {
+      const users = await userMethods.getUsers({ id: user.id })
+      return response.success(users)
     }
 
-    //delete sensitive data
-    users.forEach((user) => {
-      delete user.dataValues.password
-    })
-
-    return res.status(200).json({ success: true, data: users })
+    const users = await userMethods.getUsers()
+    response.success(users)
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 
-router.post("/", verifyUser("users_create"), async (req, res, next) => {
-  let { email, password, role } = req.body
+router.post("/", verifyUser("users_create"), async (req, res) => {
+  const response = new Response(req, res)
+  const { body } = req
 
   try {
-    if (!email) throw new CodedError("Email is required", 400, "USR|02")
-    if (!role || typeof role !== "string") role = "User" // default to 'user' role
+    const userMethods = new User()
+    const { user } = req
 
-    const userExists = await User.findOne({ where: { email } })
-    if (userExists) throw new CodedError("User already exists", 400, "USR|03")
+    delete body.id
+    delete body.password // You can't set the password when creating a user.
 
-    // make sure user has permission to create this role
-    const userCanCreateRole = await userCan(req, `roles_assign_${role.toLowerCase()}`)
-    console.log(`roles_assign_${role.toLowerCase()}`)
+    const userCanCreateUsers = await userMethods.hasCapabilities(user.id, "users_create")
+    if (!userCanCreateUsers) throw new CodedError("You are not allowed to create users", 403, "USERS|02")
 
-    if (!userCanCreateRole) throw new CodedError("Cannot create a user with this role", 401, "USR|04")
-
-    const newUser = await User.create({ email, password, role })
-
-    //delete sensitive data
-    delete newUser.dataValues.password
-
-    return res.status(201).json({ success: true, data: newUser })
+    const newUser = await userMethods.createUser(body)
+    response.success(newUser)
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 
-router.put("/:userId", verifyUser("users_update"), async (req, res, next) => {
-  const { userId } = req.params
-  const { user } = req
-  let { email, password, role } = req.body
+router.put("/:id", verifyUser("users_update"), async (req, res) => {
+  const response = new Response(req, res)
+  const { body } = req
+  const { id } = req.params
 
   try {
-    if (userId != user.id && !userCan(req, "users_update_all")) throw new CodedError("Unauthorized", 401, "USR|05")
+    const userMethods = new User()
+    const { user } = req
 
-    const userExists = await User.findByPk(userId)
-    if (!userExists) throw new CodedError("User not found", 400, "USR|06")
+    delete body.password
+    delete body.id
 
-    if (email) {
-      const userExists = await User.findOne({ where: { email } })
-      if (userExists) throw new CodedError("Email already in use", 400, "USR|03")
-    }
+    const userCanUpdateUsers = await userMethods.hasCapabilities(user.id, "users_update")
+    if (!userCanUpdateUsers) throw new CodedError("You are not allowed to update users", 403, "USERS|03")
 
-    if (password) {
-      password = await bcrypt.hash(password, 10)
-    }
-
-    if (role) {
-      const userCanCreateRole = await userCan(req, `roles_assign_${role.toLowerCase()}`)
-      if (!userCanCreateRole) throw new CodedError("Cannot create a user with this role", 401, "USR|07")
-    }
-
-    await userExists.update({ email, password, role })
-
-    let token
-    console.log(userId, user.id)
-    if (userId == user.id) {
-      //send new token
-      const tokenBody = {
-        id: userExists.dataValues.id,
-        email: userExists.dataValues.email,
-        role: userExists.dataValues.role,
-      }
-      token = jwt.sign(tokenBody, process.env.JWT_SECRET, {
-        expiresIn: "1h",
-      })
-    }
-
-    //delete sensitive data
-    delete userExists.dataValues.password
-
-    return res.status(200).json({ success: true, data: { user: userExists, token } })
+    const updatedUser = await userMethods.updateUser(id, body)
+    response.success(updatedUser)
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 
-router.delete("/:userId", verifyUser("users_delete_all"), async (req, res, next) => {
-  const { userId } = req.params
-  const { user } = req
+router.delete("/:id", verifyUser("users_delete"), async (req, res) => {
+  const response = new Response(req, res)
+  const { id } = req.params
 
   try {
-    if (userId == user.id) throw new CodedError("Unauthorized", 401, "USR|08")
+    const userMethods = new User()
+    const { user } = req
 
-    const userExists = await User.findByPk(userId)
-    if (!userExists) throw new CodedError("User not found", 400, "USR|06")
+    const userCanDeleteUsers = await userMethods.hasCapabilities(user.id, "users_delete")
+    if (!userCanDeleteUsers) throw new CodedError("You are not allowed to delete users", 403, "USERS|04")
 
-    await userExists.destroy()
-
-    return res.status(200).json({ success: true, message: "User deleted" })
+    await userMethods.deleteUser(id)
+    response.success("User deleted")
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 
-const userRoutes = router
-export default userRoutes
+const baseRoutes = router
+export default baseRoutes

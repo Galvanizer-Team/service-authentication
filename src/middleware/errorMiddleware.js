@@ -1,18 +1,8 @@
-import CodedError from "../config/CodedError"
+import Response from "../classes/responseClass"
 
-const errorMiddleware = (err, req, res, next) => {
-  if (err instanceof CodedError) {
-    const responseBody = {
-      success: false,
-      message: err.message,
-      location: err.location,
-      req: process.env.NODE_ENV === "development" ? req.body : undefined,
-      data: err.data,
-    }
-    return res.status(err.status ?? 500).json(responseBody)
-  }
-  if (process.env.NODE_ENV === "development") console.error(err)
-  res.status(500).json({ status: false, message: err.message })
+const errorMiddleware = (err, req, res) => {
+  const response = new Response(req, res)
+  response.error(err)
 }
 
 export default errorMiddleware

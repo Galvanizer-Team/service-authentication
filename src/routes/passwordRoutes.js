@@ -1,91 +1,89 @@
 import express from "express"
-import jwt from "jsonwebtoken"
-import { User } from "../database/User"
-import sendEmail from "../utils/sendEmail"
+import isEmail from "validator/lib/isEmail"
+import isJWT from "validator/lib/isJWT"
+import normalizeEmail from "validator/lib/normalizeEmail"
 import CodedError from "../config/CodedError"
-import bcrypt from "bcryptjs"
+import Response from "../classes/responseClass"
+import JWT from "../classes/jwtClass"
+import User from "../classes/usersClass"
+import sendEmail from "../utils/sendEmail"
+import { noAuthLimiter } from "../middleware/rateLimiters"
 
 const router = express.Router()
 
-router.post("/forgot", async (req, res, next) => {
-  const { email } = req.body
+router.post("/forgot", noAuthLimiter, async (req, res) => {
+  const response = new Response(req, res)
+  let { email } = req.body
 
   try {
     if (!email) throw new CodedError("Email is required", 400, "PAS|01")
+    if (!isEmail(email)) throw new CodedError("Invalid Email", 400, "PAS|02")
+    email = normalizeEmail(email, { gmail_remove_subaddress: false })
 
-    const user = await User.findOne({ where: { email } })
+    const userMethods = new User()
+    const user = await userMethods.getUser({ email })
     if (!user) throw new CodedError("User not found", 400, "PAS|02")
 
-    const tokenBody = { id: user.dataValues.id, email: user.dataValues.email }
-    const token = jwt.sign(tokenBody, process.env.PWD_SECRET, {
-      expiresIn: "1h",
-    })
+    const token = await userMethods.createPasswordResetToken(email)
 
     const emailSent = await sendEmail({
-      to: user.dataValues.email,
+      to: email,
       subject: "Password Reset",
       text: `Click here to reset your password: ${process.env.PASSWORD_RESET_URL}/${token}`,
     })
     if (!emailSent) throw new CodedError("Email failed to send", 500, "PAS|03")
 
-    res.status(200).json({ sucess: true, email })
+    response.success({ message: "Email sent" })
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 
-router.get("/reset/:token", async (req, res, next) => {
+router.get("/reset/:token", noAuthLimiter, async (req, res) => {
+  const response = new Response(req, res)
   const { token } = req.params
 
   try {
     if (!token) throw new CodedError("Token is required", 400, "PAS|04")
+    if (!isJWT(token)) throw new CodedError("Invalid Token", 400, "PAS|05")
+
+    const jwt = new JWT(process.env.PASSWORD_JWT_PUBLIC, process.env.PASSWORD_JWT_PRIVATE)
 
     let decoded
     try {
-      decoded = jwt.verify(token, process.env.PWD_SECRET)
+      decoded = await jwt.verify(token)
     } catch (error) {
       throw new CodedError("Verification Failed", 400, "PAS|05")
     }
 
-    const user = await User.findOne({ where: { email: decoded.email } })
+    const userMethods = new User()
+    const user = await userMethods.getUser({ email: decoded.email })
     if (!user) throw new CodedError("User not found", 400, "PAS|06")
 
-    res.status(200).json({ success: true, message: "Token is valid" })
+    response.success({ message: "Token is valid" })
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 
-router.post("/reset/:token", async (req, res, next) => {
+router.post("/reset/:token", noAuthLimiter, async (req, res) => {
+  const response = new Response(req, res)
   const { token } = req.params
   const { password } = req.body
 
   try {
     if (!token) throw new CodedError("Token is required", 400, "PAS|07")
+    if (!isJWT(token)) throw new CodedError("Invalid Token", 400, "PAS|07")
     if (!password) throw new CodedError("Password is required", 400, "PAS|08")
 
-    let decoded
-    try {
-      decoded = jwt.verify(token, process.env.PWD_SECRET)
-    } catch (error) {
-      throw new CodedError("Verification Failed", 400, "PAS|09")
-    }
+    const userMethods = new User()
 
-    const user = await User.findOne({ where: { email: decoded.email } })
-    if (!user) throw new CodedError("User not found", 400, "PAS|10")
+    const resetPassword = await userMethods.resetPassword(token, password)
+    if (!resetPassword) throw new CodedError("Password reset failed", 500, "PAS|09")
 
-    const encryptedPassword = await bcrypt.hash(password, 10)
-
-    await User.update({ password: encryptedPassword }, { where: { id: user.dataValues.id } })
-
-    const loginTokenBody = { id: user.dataValues.id, email: user.dataValues.email, role: user.dataValues.role }
-    const loginToken = jwt.sign(loginTokenBody, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    })
-
-    res.status(200).json({ success: true, data: { user: loginTokenBody, token: loginToken } })
+    response.success({ message: "Password reset successful" })
   } catch (error) {
-    next(error)
+    response.error(error)
   }
 })
 

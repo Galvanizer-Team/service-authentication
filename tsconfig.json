@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist", // specify the output directory
+    "noImplicitAny": true, // raise error on expressions and declarations with an implied 'any' type
+    "module": "esnext", // specify module code generation
+    "target": "es5", // specify ECMAScript target version
+    "jsx": "preserve", // preserve JSX to be further transformed by Babel
+    "allowJs": true, // allow JavaScript files to be compiled
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "src/**/*", // specify files to be included
+    "models/associations.js",
+    "config/database.js",
+    "models/Capability.js",
+    "models/Role_Capability.js",
+    "models/Role.js",
+    "models/Token.js",
+    "models/User_Role.js",
+    "models/User.js"
+  ]
+}
