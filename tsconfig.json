@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "./dist", // specify the output directory
+    "outDir": "./api", // specify the output directory
     "noImplicitAny": true, // raise error on expressions and declarations with an implied 'any' type
     "module": "esnext", // specify module code generation
     "target": "es5", // specify ECMAScript target version
