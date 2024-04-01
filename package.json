@@ -2,12 +2,12 @@
   "name": "service-authentication",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rimraf dist && babel src --out-dir dist  --copy-files",
-    "start": "node dist/app.js",
-    "dev": "nodemon --exec babel-node src/app.js"
+    "build": "rimraf api && babel src --out-dir api --copy-files",
+    "start": "node api/index.js",
+    "dev": "nodemon --exec babel-node src/index.js"
   },
   "keywords": [],
   "author": "",
