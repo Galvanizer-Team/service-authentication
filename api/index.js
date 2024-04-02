@@ -3,7 +3,6 @@ import "dotenv/config"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 import helmet from "helmet"
-import sequelize from "./config/database"
 import requireSSL from "./middleware/requireSSL"
 
 // Routes
@@ -20,7 +19,6 @@ import totpRoutes from "./routes/totpRoutes"
 
 import "./models/index"
 
-const PORT = process.env.PORT || 3000
 const app = Express()
 
 app.set("trust proxy", 1)
@@ -39,12 +37,4 @@ app.use("/users", userRoutes)
 app.use("/refresh", refreshRoutes)
 app.use("/totp", totpRoutes)
 
-app.listen(PORT, async () => {
-  try {
-    await sequelize.sync()
-  } catch (error) {
-    if (process.env.NODE_ENV !== "development") return
-    // eslint-disable-next-line no-console
-    console.error("Error syncing database:", error.message)
-  }
-})
+export default app
