@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rimraf api && babel src --out-dir api --copy-files",
     "start": "node api/index.js",
-    "dev": "nodemon --exec babel-node src/index.js"
+    "dev": "nodemon --exec babel-node api/index.js"
   },
   "keywords": [],
   "author": "",

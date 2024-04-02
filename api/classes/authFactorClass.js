@@ -1,13 +1,7 @@
-"use strict";
+import AuthFactorModel from "../models/AuthFactor"
+import User from "../models/User"
+import CodedError from "../config/CodedError"
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var _AuthFactor = _interopRequireDefault(require("../models/AuthFactor"));
-var _User = _interopRequireDefault(require("../models/User"));
-var _CodedError = _interopRequireDefault(require("../config/CodedError"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 /**
  * @typedef {Object} AuthFactorType
  * Options
@@ -23,6 +17,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  * @property {AuthFactorType} factor - The type of auth factor (TOTP, SMS, etc.)
  * @property {string} secret - The secret that is used to generate the TOTP
  */
+
 /**
  * Handles the methods for interacitng with the AuthFactor data
  */
@@ -39,15 +34,16 @@ class AuthFactor {
    */
   async createRecord(userId, factor, secret) {
     try {
-      const authFactor = await _AuthFactor.default.create({
+      const authFactor = await AuthFactorModel.create({
         userId,
         factor,
         secret,
-        verified: false
-      });
-      return authFactor.dataValues;
+        verified: false,
+      })
+
+      return authFactor.dataValues
     } catch (error) {
-      throw new _CodedError.default(error.message, error.status ?? 500, error.location ?? "AUTHFACTOR|01");
+      throw new CodedError(error.message, error.status ?? 500, error.location ?? "AUTHFACTOR|01")
     }
   }
 
@@ -62,30 +58,23 @@ class AuthFactor {
    */
   async activateRecord(id) {
     try {
-      const authFactor = await _AuthFactor.default.findOne({
-        where: {
-          id
-        }
-      });
-      if (!authFactor) throw new _CodedError.default("Auth factor not found", 404, "AUTHFACTOR|02");
+      const authFactor = await AuthFactorModel.findOne({ where: { id } })
+      if (!authFactor) throw new CodedError("Auth factor not found", 404, "AUTHFACTOR|02")
+
       await authFactor.update({
         verified: true,
-        verifiedAt: new Date()
-      });
+        verifiedAt: new Date(),
+      })
 
       // update user mfa flag
-      const user = await _User.default.findOne({
-        where: {
-          id: authFactor.userId
-        }
-      });
-      if (!user) throw new _CodedError.default("User not found", 404, "AUTHFACTOR|03");
-      await user.update({
-        mfa: true
-      });
-      return true;
+      const user = await User.findOne({ where: { id: authFactor.userId } })
+      if (!user) throw new CodedError("User not found", 404, "AUTHFACTOR|03")
+
+      await user.update({ mfa: true })
+
+      return true
     } catch (error) {
-      throw new _CodedError.default(error.message, error.status ?? 500, error.location ?? "AUTHFACTOR|03");
+      throw new CodedError(error.message, error.status ?? 500, error.location ?? "AUTHFACTOR|03")
     }
   }
 
@@ -98,28 +87,22 @@ class AuthFactor {
    */
   async deleteRecord(id) {
     try {
-      const authFactor = await _AuthFactor.default.findOne({
-        where: {
-          id
-        }
-      });
-      if (!authFactor) throw new _CodedError.default("Auth factor not found", 404, "AUTHFACTOR|04");
-      await authFactor.destroy();
-      const user = await _User.default.findOne({
-        where: {
-          id: authFactor.userId
-        }
-      });
-      if (!user) throw new _CodedError.default("User not found", 404, "AUTHFACTOR|05");
-      const userAuthFactors = await user.getAuthFactors();
+      const authFactor = await AuthFactorModel.findOne({ where: { id } })
+      if (!authFactor) throw new CodedError("Auth factor not found", 404, "AUTHFACTOR|04")
+
+      await authFactor.destroy()
+
+      const user = await User.findOne({ where: { id: authFactor.userId } })
+      if (!user) throw new CodedError("User not found", 404, "AUTHFACTOR|05")
+
+      const userAuthFactors = await user.getAuthFactors()
       if (userAuthFactors.length === 0) {
-        await user.update({
-          mfa: false
-        });
+        await user.update({ mfa: false })
       }
-      return true;
+
+      return true
     } catch (error) {
-      throw new _CodedError.default(error.message, error.status ?? 500, error.location ?? "AUTHFACTOR|05");
+      throw new CodedError(error.message, error.status ?? 500, error.location ?? "AUTHFACTOR|05")
     }
   }
 
@@ -132,28 +115,23 @@ class AuthFactor {
    */
   async disableMFA(userId) {
     try {
-      const user = await _User.default.findOne({
-        where: {
-          id: userId
-        }
-      });
-      if (!user) throw new _CodedError.default("User not found", 404, "AUTHFACTOR|06");
-      await user.update({
-        mfa: false
-      });
-      const authFactors = await _AuthFactor.default.getAll({
-        where: {
-          userId
-        }
-      });
-      if (!authFactors) throw new _CodedError.default("Auth factors not found", 404, "AUTHFACTOR|07");
-      authFactors.forEach(async authFactor => {
-        await authFactor.destroy();
-      });
-      return true;
+      const user = await User.findOne({ where: { id: userId } })
+      if (!user) throw new CodedError("User not found", 404, "AUTHFACTOR|06")
+
+      await user.update({ mfa: false })
+
+      const authFactors = await AuthFactorModel.getAll({ where: { userId } })
+      if (!authFactors) throw new CodedError("Auth factors not found", 404, "AUTHFACTOR|07")
+
+      authFactors.forEach(async (authFactor) => {
+        await authFactor.destroy()
+      })
+
+      return true
     } catch (error) {
-      throw new _CodedError.default(error.message, error.status ?? 500, error.location ?? "AUTHFACTOR|08");
+      throw new CodedError(error.message, error.status ?? 500, error.location ?? "AUTHFACTOR|08")
     }
   }
 }
-var _default = exports.default = AuthFactor;
+
+export default AuthFactor

@@ -1,13 +1,7 @@
-"use strict";
+import CapabilityModel from "../models/Capability"
+import RoleModel from "../models/Role"
+import CodedError from "../config/CodedError"
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var _Capability = _interopRequireDefault(require("../models/Capability"));
-var _Role = _interopRequireDefault(require("../models/Role"));
-var _CodedError = _interopRequireDefault(require("../config/CodedError"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class Capability {
   /**
    * Get all capabilities that match the conditions
@@ -17,12 +11,10 @@ class Capability {
    */
   async getCapabilities(conditions = {}) {
     try {
-      const capabilities = await _Capability.default.findAll({
-        where: conditions
-      });
-      return capabilities;
+      const capabilities = await CapabilityModel.findAll({ where: conditions })
+      return capabilities
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "CAPABILITY|00");
+      throw new CodedError(error.message, 400, "CAPABILITY|00")
     }
   }
 
@@ -31,12 +23,10 @@ class Capability {
    */
   async getCapability(conditions = {}) {
     try {
-      const capability = await _Capability.default.findOne({
-        where: conditions
-      });
-      return capability;
+      const capability = await CapabilityModel.findOne({ where: conditions })
+      return capability
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "CAPABILITY|01");
+      throw new CodedError(error.message, 400, "CAPABILITY|01")
     }
   }
 
@@ -50,24 +40,19 @@ class Capability {
    * @returns {Promise<Capability>}
    */
   async createCapability(data = {}, options = {}) {
-    const {
-      name,
-      description
-    } = data;
-    const {
-      roles
-    } = options;
+    const { name, description } = data
+    const { roles } = options
+
     try {
-      const capability = await _Capability.default.create({
-        name,
-        description
-      });
+      const capability = await CapabilityModel.create({ name, description })
+
       if (roles) {
-        await capability.setRoles(roles);
+        await capability.setRoles(roles)
       }
-      return capability;
+
+      return capability
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "CAPABILITY|02");
+      throw new CodedError(error.message, 400, "CAPABILITY|02")
     }
   }
 
@@ -81,30 +66,23 @@ class Capability {
    */
   async deleteCapabilities(capabilities) {
     try {
-      if (!capabilities) throw new _CodedError.default("No capabilities provided", 400, "CAPABILITY|02");
-      if (!Array.isArray(capabilities)) throw new _CodedError.default("Capabilities must be an array", 400, "CAPABILITY|03");
-      await _Capability.default.destroy({
-        where: {
-          name: capabilities
-        }
-      });
+      if (!capabilities) throw new CodedError("No capabilities provided", 400, "CAPABILITY|02")
+      if (!Array.isArray(capabilities)) throw new CodedError("Capabilities must be an array", 400, "CAPABILITY|03")
+      await CapabilityModel.destroy({ where: { name: capabilities } })
 
       // Remove the capabilities from all roles
-      const roles = await _Role.default.findAll({
-        include: [{
-          model: _Capability.default,
-          as: "capabilities"
-        }]
-      });
-      roles.forEach(async role => {
-        const roleCapabilities = role.capabilities.map(capability => capability.name);
-        const updatedCapabilities = roleCapabilities.filter(capability => !capabilities.includes(capability));
-        await role.setCapabilities(updatedCapabilities);
-      });
-      return true;
+      const roles = await RoleModel.findAll({ include: [{ model: CapabilityModel, as: "capabilities" }] })
+      roles.forEach(async (role) => {
+        const roleCapabilities = role.capabilities.map((capability) => capability.name)
+        const updatedCapabilities = roleCapabilities.filter((capability) => !capabilities.includes(capability))
+        await role.setCapabilities(updatedCapabilities)
+      })
+
+      return true
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "CAPABILITY|03");
+      throw new CodedError(error.message, 400, "CAPABILITY|03")
     }
   }
 }
-var _default = exports.default = Capability;
+
+export default Capability

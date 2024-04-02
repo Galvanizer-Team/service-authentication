@@ -1,14 +1,8 @@
-"use strict";
+import RoleModel from "../models/Role"
+import CapabilityModel from "../models/Capability"
+import Capability from "./capabilitiesClass"
+import CodedError from "../config/CodedError"
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var _Role = _interopRequireDefault(require("../models/Role"));
-var _Capability = _interopRequireDefault(require("../models/Capability"));
-var _capabilitiesClass = _interopRequireDefault(require("./capabilitiesClass"));
-var _CodedError = _interopRequireDefault(require("../config/CodedError"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class Role {
   /**
    * Get all roles that match the conditions
@@ -19,12 +13,10 @@ class Role {
    */
   async getRoles(conditions = {}) {
     try {
-      const roles = await _Role.default.findAll({
-        where: conditions
-      });
-      return roles;
+      const roles = await RoleModel.findAll({ where: conditions })
+      return roles
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "ROLE|00");
+      throw new CodedError(error.message, 400, "ROLE|00")
     }
   }
 
@@ -36,12 +28,10 @@ class Role {
    */
   async getRole(conditions = {}) {
     try {
-      const role = await _Role.default.findOne({
-        where: conditions
-      });
-      return role;
+      const role = await RoleModel.findOne({ where: conditions })
+      return role
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "ROLE|01");
+      throw new CodedError(error.message, 400, "ROLE|01")
     }
   }
 
@@ -54,44 +44,33 @@ class Role {
    * @returns {Promise<Role>}
    */
   async createRole(data = {}, options = {}) {
-    const {
-      name,
-      description,
-      capabilities: cababilityNames
-    } = data;
-    const {
-      copyFrom
-    } = options;
+    const { name, description, capabilities: cababilityNames } = data
+    const { copyFrom } = options
+
     try {
-      const role = await _Role.default.create({
-        name,
-        description
-      });
-      const capability = new _capabilitiesClass.default();
-      const SETTING_NEW_CAPABILITIES = cababilityNames && cababilityNames.length;
-      const capabilityObjects = SETTING_NEW_CAPABILITIES ? await capability.getCapabilities({
-        name: cababilityNames
-      }) : [];
+      const role = await RoleModel.create({ name, description })
+      const capability = new Capability()
+
+      const SETTING_NEW_CAPABILITIES = cababilityNames && cababilityNames.length
+      const capabilityObjects = SETTING_NEW_CAPABILITIES ? await capability.getCapabilities({ name: cababilityNames }) : []
+
       if (copyFrom) {
-        const existingRole = await _Role.default.findOne({
-          where: {
-            name: copyFrom
-          },
-          include: [{
-            model: _Capability.default,
-            as: "capabilities"
-          }]
-        });
-        if (!existingRole?.capabilities) return role;
-        const capabilitiesList = [...existingRole.capabilities, ...capabilityObjects];
-        await role.setCapabilities(capabilitiesList);
+        const existingRole = await RoleModel.findOne({
+          where: { name: copyFrom },
+          include: [{ model: CapabilityModel, as: "capabilities" }],
+        })
+
+        if (!existingRole?.capabilities) return role
+        const capabilitiesList = [...existingRole.capabilities, ...capabilityObjects]
+        await role.setCapabilities(capabilitiesList)
       } else {
-        if (!capabilityObjects.length) return role;
-        await role.setCapabilities(capabilityObjects);
+        if (!capabilityObjects.length) return role
+        await role.setCapabilities(capabilityObjects)
       }
-      return role;
+
+      return role
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "ROLE|02");
+      throw new CodedError(error.message, 400, "ROLE|02")
     }
   }
 
@@ -104,41 +83,30 @@ class Role {
    * @returns {Promise<Role>}
    */
   async updateRole(data = {}) {
-    const {
-      id,
-      name,
-      description,
-      capabilities: capabilityNames
-    } = data;
-    const capability = new _capabilitiesClass.default();
+    const { id, name, description, capabilities: capabilityNames } = data
+    const capability = new Capability()
+
     try {
-      const condition = id ? {
-        id
-      } : {
-        name
-      };
-      const role = await _Role.default.findOne({
-        where: condition
-      });
-      if (!role) throw new _CodedError.default("Role not found", 400, "ROLE|03");
-      await role.update({
-        name,
-        description
-      });
+      const condition = id ? { id } : { name }
+      const role = await RoleModel.findOne({ where: condition })
+      if (!role) throw new CodedError("Role not found", 400, "ROLE|03")
+
+      await role.update({ name, description })
+
       if (Array.isArray(capabilityNames) && !capabilityNames.length) {
-        await role.setCapabilities([]);
-        return role;
+        await role.setCapabilities([])
+        return role
       }
+
       if (capabilityNames) {
-        const capabilities = await capability.getCapabilities({
-          name: capabilityNames
-        });
-        if (!capabilities.length) return role;
-        await role.setCapabilities(capabilities);
+        const capabilities = await capability.getCapabilities({ name: capabilityNames })
+        if (!capabilities.length) return role
+        await role.setCapabilities(capabilities)
       }
-      return role;
+
+      return role
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "ROLE|04");
+      throw new CodedError(error.message, 400, "ROLE|04")
     }
   }
 
@@ -150,23 +118,20 @@ class Role {
    * @returns {Promise<Role>}
    */
   async addCapabilities(roleName, capabilities = []) {
-    const capability = new _capabilitiesClass.default();
+    const capability = new Capability()
+
     try {
-      if (typeof roleName !== "string") throw new _CodedError.default("Role name is required", 400, "ROLE|05");
-      const role = await _Role.default.findOne({
-        where: {
-          name: roleName
-        }
-      });
-      if (!role) throw new _CodedError.default("Role not found", 400, "ROLE|05");
-      const capabilityObjects = await capability.getCapabilities({
-        name: capabilities
-      });
-      if (!capabilityObjects.length) return role;
-      await role.addCapabilities(capabilityObjects);
-      return role;
+      if (typeof roleName !== "string") throw new CodedError("Role name is required", 400, "ROLE|05")
+      const role = await RoleModel.findOne({ where: { name: roleName } })
+      if (!role) throw new CodedError("Role not found", 400, "ROLE|05")
+
+      const capabilityObjects = await capability.getCapabilities({ name: capabilities })
+      if (!capabilityObjects.length) return role
+
+      await role.addCapabilities(capabilityObjects)
+      return role
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "ROLE|06");
+      throw new CodedError(error.message, 400, "ROLE|06")
     }
   }
 
@@ -178,23 +143,20 @@ class Role {
    * @returns {Promise<Role>}
    */
   async removeCapabilities(roleName, capabilities = []) {
-    const capability = new _capabilitiesClass.default();
+    const capability = new Capability()
+
     try {
-      if (typeof roleName !== "string") throw new _CodedError.default("Role name is required", 400, "ROLE|07");
-      const role = await _Role.default.findOne({
-        where: {
-          name: roleName
-        }
-      });
-      if (!role) throw new _CodedError.default("Role not found", 400, "ROLE|07");
-      const capabilityObjects = await capability.getCapabilities({
-        name: capabilities
-      });
-      if (!capabilityObjects.length) return role;
-      await role.removeCapabilities(capabilityObjects);
-      return role;
+      if (typeof roleName !== "string") throw new CodedError("Role name is required", 400, "ROLE|07")
+      const role = await RoleModel.findOne({ where: { name: roleName } })
+      if (!role) throw new CodedError("Role not found", 400, "ROLE|07")
+
+      const capabilityObjects = await capability.getCapabilities({ name: capabilities })
+      if (!capabilityObjects.length) return role
+
+      await role.removeCapabilities(capabilityObjects)
+      return role
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "ROLE|08");
+      throw new CodedError(error.message, 400, "ROLE|08")
     }
   }
 
@@ -208,25 +170,20 @@ class Role {
    */
   async deleteRole(roleName, migrateToRole) {
     try {
-      if (typeof roleName !== "string") throw new _CodedError.default("Role name is required", 400, "ROLE|09");
-      const role = await _Role.default.findOne({
-        where: {
-          name: roleName
-        }
-      });
-      if (!role) throw new _CodedError.default("Role not found", 400, "ROLE|09");
-      const migrateToRoleObject = await _Role.default.findOne({
-        where: {
-          name: migrateToRole
-        }
-      });
-      if (!migrateToRoleObject) throw new _CodedError.default("Role to migrate to not found", 400, "ROLE|09");
-      await role.setUsers(migrateToRoleObject.users);
-      await role.destroy();
-      return role;
+      if (typeof roleName !== "string") throw new CodedError("Role name is required", 400, "ROLE|09")
+      const role = await RoleModel.findOne({ where: { name: roleName } })
+      if (!role) throw new CodedError("Role not found", 400, "ROLE|09")
+
+      const migrateToRoleObject = await RoleModel.findOne({ where: { name: migrateToRole } })
+      if (!migrateToRoleObject) throw new CodedError("Role to migrate to not found", 400, "ROLE|09")
+
+      await role.setUsers(migrateToRoleObject.users)
+      await role.destroy()
+      return role
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "ROLE|10");
+      throw new CodedError(error.message, 400, "ROLE|10")
     }
   }
 }
-var _default = exports.default = Role;
+
+export default Role

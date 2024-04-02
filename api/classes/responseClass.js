@@ -1,11 +1,5 @@
-"use strict";
+import CodedError from "../config/CodedError"
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var _CodedError = _interopRequireDefault(require("../config/CodedError"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 class Response {
   /**
    * Used to normalize the response
@@ -14,8 +8,8 @@ class Response {
    * @param {*} res
    */
   constructor(req, res) {
-    this.req = req;
-    this.res = res;
+    this.req = req
+    this.res = res
   }
 
   /**
@@ -24,13 +18,14 @@ class Response {
    * @returns {boolean} true
    */
   success(data) {
-    const response = {
-      success: true
-    };
-    if (this.req.token) response.token = this.req.token;
-    if (data) response.data = data;
-    this.res.status(this.req.status ?? 200).json(response);
-    return true;
+    const response = { success: true }
+
+    if (this.req.token) response.token = this.req.token
+    if (data) response.data = data
+
+    this.res.status(this.req.status ?? 200).json(response)
+
+    return true
   }
 
   /**
@@ -39,26 +34,23 @@ class Response {
    * @returns {boolean} true
    */
   error(error) {
-    const isDev = process.env.NODE_ENV === "development";
-    if (isDev) console.error(error);
-    if (error instanceof _CodedError.default) {
+    const isDev = process.env.NODE_ENV === "development"
+    if (isDev) console.error(error)
+    if (error instanceof CodedError) {
       const responseBody = {
         error: true,
         success: false,
         message: error.message,
         location: isDev ? error.location : undefined,
         req: isDev ? this.req.body : undefined,
-        data: error.data
-      };
-      this.res.status(error.status ?? 500).json(responseBody);
-      return true;
+        data: error.data,
+      }
+      this.res.status(error.status ?? 500).json(responseBody)
+      return true
     }
-    this.res.status(500).json({
-      success: false,
-      error: true,
-      message: error.message
-    });
-    return true;
+
+    this.res.status(500).json({ success: false, error: true, message: error.message })
+    return true
   }
 
   /**
@@ -67,8 +59,8 @@ class Response {
    * @returns {boolean} - true
    */
   setStatus(status) {
-    this.req.status = status;
-    return true;
+    this.req.status = status
+    return true
   }
 
   /**
@@ -77,8 +69,9 @@ class Response {
    * @returns {boolean} - true
    */
   setToken(token) {
-    this.req.token = token;
-    return true;
+    this.req.token = token
+    return true
   }
 }
-var _default = exports.default = Response;
+
+export default Response

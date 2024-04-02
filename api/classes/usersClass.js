@@ -1,17 +1,11 @@
-"use strict";
+import bcrypt from "bcryptjs"
+import isStrongPassword from "validator/lib/isStrongPassword"
+import isJWT from "validator/lib/isJWT"
+import CodedError from "../config/CodedError"
+import JWT from "./jwtClass"
+import Role from "./rolesClass"
+import UserModel from "../models/User"
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-var _bcryptjs = _interopRequireDefault(require("bcryptjs"));
-var _isStrongPassword = _interopRequireDefault(require("validator/lib/isStrongPassword"));
-var _isJWT = _interopRequireDefault(require("validator/lib/isJWT"));
-var _CodedError = _interopRequireDefault(require("../config/CodedError"));
-var _jwtClass = _interopRequireDefault(require("./jwtClass"));
-var _rolesClass = _interopRequireDefault(require("./rolesClass"));
-var _User = _interopRequireDefault(require("../models/User"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 /**
  * Default data to create a new user
  * @typedef {Object} DefaultUser
@@ -26,7 +20,7 @@ class User {
    * Class for handling User operations
    */
   constructor() {
-    this.User = _User.default;
+    this.User = UserModel
   }
 
   /**
@@ -38,16 +32,16 @@ class User {
    */
   async getUsers(conditions) {
     try {
-      const users = await _User.default.findAll({
-        where: conditions
-      });
-      users.forEach(user => {
+      const users = await UserModel.findAll({ where: conditions })
+
+      users.forEach((user) => {
         // eslint-disable-next-line no-param-reassign
-        delete user.dataValues.password;
-      });
-      return users;
+        delete user.dataValues.password
+      })
+
+      return users
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|00");
+      throw new CodedError(error.message, 400, "USER|00")
     }
   }
 
@@ -59,14 +53,12 @@ class User {
    */
   async getUser(conditions = {}) {
     try {
-      const user = await _User.default.findOne({
-        where: conditions
-      });
+      const user = await UserModel.findOne({ where: conditions })
       // if (user) delete user.dataValues.password
 
-      return user;
+      return user
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|01");
+      throw new CodedError(error.message, 400, "USER|01")
     }
   }
 
@@ -77,12 +69,13 @@ class User {
    */
   async hashPassword(password) {
     try {
-      if (!password) throw new _CodedError.default("Password is required", 400, "USER|32");
-      if (!(0, _isStrongPassword.default)(password)) throw new _CodedError.default("Password does not meet requirements", 400, "USER|33");
-      const hashedPassword = await _bcryptjs.default.hash(password, 10);
-      return hashedPassword;
+      if (!password) throw new CodedError("Password is required", 400, "USER|32")
+      if (!isStrongPassword(password)) throw new CodedError("Password does not meet requirements", 400, "USER|33")
+
+      const hashedPassword = await bcrypt.hash(password, 10)
+      return hashedPassword
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|34");
+      throw new CodedError(error.message, 400, "USER|34")
     }
   }
 
@@ -93,33 +86,35 @@ class User {
    * @returns {Promise<User>} User
    */
   async createUser(data = {}) {
-    const role = new _rolesClass.default();
+    const role = new Role()
+
     try {
       const createUserData = {
-        active: data.active ?? true
-      };
-      if (!data.email) throw new _CodedError.default("Email is required", 400, "USER|02");
-      createUserData.email = data.email;
-      const roleName = data.role || "User";
-      const roleObject = await role.getRole({
-        name: roleName
-      });
-      createUserData.roleId = roleObject.id;
+        active: data.active ?? true,
+      }
+
+      if (!data.email) throw new CodedError("Email is required", 400, "USER|02")
+      createUserData.email = data.email
+
+      const roleName = data.role || "User"
+      const roleObject = await role.getRole({ name: roleName })
+      createUserData.roleId = roleObject.id
+
       if (!roleObject) {
-        if (roleName !== "User") throw new _CodedError.default("Role not found", 400, "USER|03");
-        const newRole = await role.createRole({
-          name: roleName
-        });
-        createUserData.roleId = newRole.id;
+        if (roleName !== "User") throw new CodedError("Role not found", 400, "USER|03")
+        const newRole = await role.createRole({ name: roleName })
+        createUserData.roleId = newRole.id
       }
+
       if (data.password) {
-        const hashedPassword = await this.hashPassword(data.password);
-        createUserData.password = hashedPassword;
+        const hashedPassword = await this.hashPassword(data.password)
+        createUserData.password = hashedPassword
       }
-      const user = await _User.default.create(createUserData);
-      return user;
+
+      const user = await UserModel.create(createUserData)
+      return user
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|04");
+      throw new CodedError(error.message, 400, "USER|04")
     }
   }
 
@@ -135,34 +130,37 @@ class User {
   async updateUser(data, conditions) {
     try {
       // get users
-      const user = await this.getUser(conditions);
-      if (!user.length) throw new _CodedError.default("No users found", 400, "USER|05");
+      const user = await this.getUser(conditions)
+
+      if (!user.length) throw new CodedError("No users found", 400, "USER|05")
 
       // prep data
-      const updateUserData = {};
+      const updateUserData = {}
+
       if (data.email) {
-        const userWithEmail = await this.getUser({
-          email: data.email
-        });
-        if (userWithEmail && user.dataValues.id !== userWithEmail.dataValues.id) throw new _CodedError.default("Email already taken", 400, "USER|06");
-        updateUserData.email = data.email;
+        const userWithEmail = await this.getUser({ email: data.email })
+        if (userWithEmail && user.dataValues.id !== userWithEmail.dataValues.id) throw new CodedError("Email already taken", 400, "USER|06")
+        updateUserData.email = data.email
       }
-      if (typeof data.active !== "undefined") updateUserData.active = data.active;
-      if (data.password) updateUserData.password = await this.hashPassword(data.password);
+
+      if (typeof data.active !== "undefined") updateUserData.active = data.active
+
+      if (data.password) updateUserData.password = await this.hashPassword(data.password)
+
       if (data.role) {
-        const role = new _rolesClass.default();
-        const roleObject = await role.getRole({
-          name: data.role
-        });
-        if (!roleObject) throw new _CodedError.default("Role not found", 400, "USER|07");
-        updateUserData.roleId = roleObject.id;
+        const role = new Role()
+
+        const roleObject = await role.getRole({ name: data.role })
+        if (!roleObject) throw new CodedError("Role not found", 400, "USER|07")
+
+        updateUserData.roleId = roleObject.id
       }
 
       // update user
-      const updatedUser = await user.update(updateUserData);
-      return updatedUser;
+      const updatedUser = await user.update(updateUserData)
+      return updatedUser
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|08");
+      throw new CodedError(error.message, 400, "USER|08")
     }
   }
 
@@ -174,12 +172,13 @@ class User {
    */
   async deleteUser(conditions) {
     try {
-      const user = await this.getUser(conditions);
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|09");
-      await user.destroy();
-      return user;
+      const user = await this.getUser(conditions)
+      if (!user) throw new CodedError("User not found", 400, "USER|09")
+
+      await user.destroy()
+      return user
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|10");
+      throw new CodedError(error.message, 400, "USER|10")
     }
   }
 
@@ -191,7 +190,7 @@ class User {
    * @returns {Promise<Boolean>} - True if the user has the capability
    */
   async hasCapabilities(userId, ...capabilities) {
-    return true;
+    return true
     // try {
     //   return true // right now, all users have all capabilities
 
@@ -221,14 +220,13 @@ class User {
    */
   async checkPassword(userId, password) {
     try {
-      const user = await this.getUser({
-        id: userId
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|13");
-      const passwordMatches = await _bcryptjs.default.compare(password, user?.dataValues?.password);
-      return passwordMatches;
+      const user = await this.getUser({ id: userId })
+      if (!user) throw new CodedError("User not found", 400, "USER|13")
+
+      const passwordMatches = await bcrypt.compare(password, user?.dataValues?.password)
+      return passwordMatches
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|14");
+      throw new CodedError(error.message, 400, "USER|14")
     }
   }
 
@@ -240,23 +238,24 @@ class User {
    */
   async createSessionToken(userId) {
     try {
-      const jwt = new _jwtClass.default();
-      const user = await this.getUser({
-        id: userId
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|15");
-      const token = await jwt.sign({
-        id: user.id,
-        email: user.email,
-        role: user?.dataValues?.roleId,
-        mfa: user?.dataValues?.mfa ?? false,
-        sessionState: "full"
-      }, "15m" // change to 15m in production
-      );
+      const jwt = new JWT()
 
-      return token;
+      const user = await this.getUser({ id: userId })
+      if (!user) throw new CodedError("User not found", 400, "USER|15")
+
+      const token = await jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role: user?.dataValues?.roleId,
+          mfa: user?.dataValues?.mfa ?? false,
+          sessionState: "full",
+        },
+        "15m" // change to 15m in production
+      )
+      return token
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|16");
+      throw new CodedError(error.message, 400, "USER|16")
     }
   }
 
@@ -270,20 +269,23 @@ class User {
    */
   async createHalfSessionToken(userId) {
     try {
-      const jwt = new _jwtClass.default();
-      const user = await this.getUser({
-        id: userId
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|15");
-      const token = await jwt.sign({
-        id: user.id,
-        email: user.email,
-        role: user?.dataValues?.roleId,
-        sessionState: "half"
-      }, "5m");
-      return token;
+      const jwt = new JWT()
+
+      const user = await this.getUser({ id: userId })
+      if (!user) throw new CodedError("User not found", 400, "USER|15")
+
+      const token = await jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role: user?.dataValues?.roleId,
+          sessionState: "half",
+        },
+        "5m"
+      )
+      return token
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|16");
+      throw new CodedError(error.message, 400, "USER|16")
     }
   }
 
@@ -295,21 +297,16 @@ class User {
    */
   async createRefreshToken(userId) {
     try {
-      const jwt = new _jwtClass.default(process.env.REFRESH_JWT_PUBLIC, process.env.REFRESH_JWT_PRIVATE);
-      const user = await this.getUser({
-        id: userId
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|17");
+      const jwt = new JWT(process.env.REFRESH_JWT_PUBLIC, process.env.REFRESH_JWT_PRIVATE)
+
+      const user = await this.getUser({ id: userId })
+      if (!user) throw new CodedError("User not found", 400, "USER|17")
 
       // expires in 1 week
-      const token = await jwt.sign({
-        id: user.id,
-        email: user.email,
-        role: user?.dataValues?.roleId
-      }, "1w");
-      return token;
+      const token = await jwt.sign({ id: user.id, email: user.email, role: user?.dataValues?.roleId }, "1w")
+      return token
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|18");
+      throw new CodedError(error.message, 400, "USER|18")
     }
   }
 
@@ -323,17 +320,19 @@ class User {
    */
   async checkSessionToken(token) {
     try {
-      const jwt = new _jwtClass.default();
-      const decodedToken = await jwt.verify(token);
-      if (decodedToken instanceof _CodedError.default) throw decodedToken;
-      if (decodedToken.sessionState !== "full") throw new _CodedError.default("Session Token is invalid", 400, "USER|18");
-      const user = await this.getUser({
-        id: decodedToken.id
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|19");
-      return true;
+      const jwt = new JWT()
+
+      const decodedToken = await jwt.verify(token)
+      if (decodedToken instanceof CodedError) throw decodedToken
+
+      if (decodedToken.sessionState !== "full") throw new CodedError("Session Token is invalid", 400, "USER|18")
+
+      const user = await this.getUser({ id: decodedToken.id })
+      if (!user) throw new CodedError("User not found", 400, "USER|19")
+
+      return true
     } catch (error) {
-      return false;
+      return false
     }
   }
 
@@ -345,17 +344,19 @@ class User {
    */
   async checkHalfSessionToken(token) {
     try {
-      const jwt = new _jwtClass.default();
-      const decodedToken = await jwt.verify(token);
-      if (decodedToken instanceof _CodedError.default) throw decodedToken;
-      if (decodedToken.sessionState !== "half") throw new _CodedError.default("Session Token is invalid", 400, "USER|18");
-      const user = await this.getUser({
-        id: decodedToken.id
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|19");
-      return true;
+      const jwt = new JWT()
+
+      const decodedToken = await jwt.verify(token)
+      if (decodedToken instanceof CodedError) throw decodedToken
+
+      if (decodedToken.sessionState !== "half") throw new CodedError("Session Token is invalid", 400, "USER|18")
+
+      const user = await this.getUser({ id: decodedToken.id })
+      if (!user) throw new CodedError("User not found", 400, "USER|19")
+
+      return true
     } catch (error) {
-      return false;
+      return false
     }
   }
 
@@ -367,18 +368,20 @@ class User {
    */
   async checkRefreshToken(token) {
     try {
-      if (!token) throw new _CodedError.default("Refresh Token is required", 400, "USER|20");
-      if (!(0, _isJWT.default)(token)) throw new _CodedError.default("Token is invalid", 400, "USER|21");
-      const jwt = new _jwtClass.default(process.env.REFRESH_JWT_PUBLIC, process.env.REFRESH_JWT_PRIVATE);
-      const decodedToken = await jwt.verify(token);
-      if (decodedToken instanceof _CodedError.default) throw decodedToken;
-      const user = await this.getUser({
-        id: decodedToken.id
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|21");
-      return decodedToken;
+      if (!token) throw new CodedError("Refresh Token is required", 400, "USER|20")
+      if (!isJWT(token)) throw new CodedError("Token is invalid", 400, "USER|21")
+
+      const jwt = new JWT(process.env.REFRESH_JWT_PUBLIC, process.env.REFRESH_JWT_PRIVATE)
+
+      const decodedToken = await jwt.verify(token)
+      if (decodedToken instanceof CodedError) throw decodedToken
+
+      const user = await this.getUser({ id: decodedToken.id })
+      if (!user) throw new CodedError("User not found", 400, "USER|21")
+
+      return decodedToken
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|22");
+      throw new CodedError(error.message, 400, "USER|22")
     }
   }
 
@@ -390,18 +393,18 @@ class User {
    */
   async refreshSessionToken(refreshToken) {
     try {
-      const jwt = new _jwtClass.default();
-      const validRefreshToken = await this.checkRefreshToken(refreshToken);
-      const token = await this.createSessionToken(validRefreshToken.id);
-      const newRefreshToken = await this.createRefreshToken(validRefreshToken.id);
-      const blacklistOldToken = await jwt.blacklist(refreshToken);
-      if (!blacklistOldToken) throw new _CodedError.default("Could not blacklist old token", 500, "USER|23");
-      return {
-        sessionToken: token,
-        refreshToken: newRefreshToken
-      };
+      const jwt = new JWT()
+      const validRefreshToken = await this.checkRefreshToken(refreshToken)
+
+      const token = await this.createSessionToken(validRefreshToken.id)
+      const newRefreshToken = await this.createRefreshToken(validRefreshToken.id)
+
+      const blacklistOldToken = await jwt.blacklist(refreshToken)
+      if (!blacklistOldToken) throw new CodedError("Could not blacklist old token", 500, "USER|23")
+
+      return { sessionToken: token, refreshToken: newRefreshToken }
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|24");
+      throw new CodedError(error.message, 400, "USER|24")
     }
   }
 
@@ -413,18 +416,15 @@ class User {
    */
   async createPasswordResetToken(email) {
     try {
-      const jwt = new _jwtClass.default(process.env.PASSWORD_JWT_PUBLIC, process.env.PASSWORD_JWT_PRIVATE);
-      const user = await this.getUser({
-        email
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|25");
-      const token = await jwt.sign({
-        id: user.id,
-        email: user.email
-      }, "15m");
-      return token;
+      const jwt = new JWT(process.env.PASSWORD_JWT_PUBLIC, process.env.PASSWORD_JWT_PRIVATE)
+
+      const user = await this.getUser({ email })
+      if (!user) throw new CodedError("User not found", 400, "USER|25")
+
+      const token = await jwt.sign({ id: user.id, email: user.email }, "15m")
+      return token
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|26");
+      throw new CodedError(error.message, 400, "USER|26")
     }
   }
 
@@ -436,16 +436,17 @@ class User {
    */
   async checkPasswordResetToken(token) {
     try {
-      const jwt = new _jwtClass.default(process.env.PASSWORD_JWT_PUBLIC, process.env.PASSWORD_JWT_PRIVATE);
-      const decodedToken = await jwt.verify(token);
-      if (decodedToken instanceof _CodedError.default) throw decodedToken;
-      const user = await this.getUser({
-        id: decodedToken.id
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|27");
-      return true;
+      const jwt = new JWT(process.env.PASSWORD_JWT_PUBLIC, process.env.PASSWORD_JWT_PRIVATE)
+
+      const decodedToken = await jwt.verify(token)
+      if (decodedToken instanceof CodedError) throw decodedToken
+
+      const user = await this.getUser({ id: decodedToken.id })
+      if (!user) throw new CodedError("User not found", 400, "USER|27")
+
+      return true
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|28");
+      throw new CodedError(error.message, 400, "USER|28")
     }
   }
 
@@ -458,25 +459,28 @@ class User {
    */
   async resetPassword(token, password) {
     try {
-      if (!token) throw new _CodedError.default("Password Token is required", 400, "USER|29");
-      if (!password) throw new _CodedError.default("Password is required", 400, "USER|30");
-      const jwt = new _jwtClass.default(process.env.PASSWORD_JWT_PUBLIC, process.env.PASSWORD_JWT_PRIVATE);
-      const decodedToken = await jwt.verify(token);
-      if (decodedToken instanceof _CodedError.default) throw decodedToken;
-      const user = await this.getUser({
-        id: decodedToken.id
-      });
-      if (!user) throw new _CodedError.default("User not found", 400, "USER|29");
-      const hashedPassword = await this.hashPassword(password);
-      await user.update({
-        password: hashedPassword
-      });
-      const blacklistOldToken = await jwt.blacklist(token);
-      if (!blacklistOldToken) throw new _CodedError.default("Could not blacklist old token", 400, "USER|30");
-      return true;
+      if (!token) throw new CodedError("Password Token is required", 400, "USER|29")
+      if (!password) throw new CodedError("Password is required", 400, "USER|30")
+
+      const jwt = new JWT(process.env.PASSWORD_JWT_PUBLIC, process.env.PASSWORD_JWT_PRIVATE)
+
+      const decodedToken = await jwt.verify(token)
+      if (decodedToken instanceof CodedError) throw decodedToken
+
+      const user = await this.getUser({ id: decodedToken.id })
+      if (!user) throw new CodedError("User not found", 400, "USER|29")
+
+      const hashedPassword = await this.hashPassword(password)
+      await user.update({ password: hashedPassword })
+
+      const blacklistOldToken = await jwt.blacklist(token)
+      if (!blacklistOldToken) throw new CodedError("Could not blacklist old token", 400, "USER|30")
+
+      return true
     } catch (error) {
-      throw new _CodedError.default(error.message, 400, "USER|31");
+      throw new CodedError(error.message, 400, "USER|31")
     }
   }
 }
-var _default = exports.default = User;
+
+export default User
